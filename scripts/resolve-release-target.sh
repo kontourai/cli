@@ -10,8 +10,11 @@ set -euo pipefail
 TARGET_TAG=${1:?Usage: resolve-release-target.sh <release-tag>}
 OUTPUT=${GITHUB_OUTPUT:-/dev/stdout}
 
-if ! printf '%s' "${TARGET_TAG}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
-  echo "Target must be a supported immutable release tag (v<semver>), got ${TARGET_TAG}" >&2
+# "cli-v<semver>" is accepted as MIGRATION COMPAT only: the first release cut
+# in this repo (cli-v0.6.0) was tagged before release-please-config gained
+# include-component-in-tag=false. All later tags are plain "v<semver>".
+if ! printf '%s' "${TARGET_TAG}" | grep -Eq '^(v|cli-v)[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+  echo "Target must be a supported immutable release tag (v<semver> or legacy cli-v<semver>), got ${TARGET_TAG}" >&2
   exit 1
 fi
 
@@ -22,8 +25,10 @@ TARGET_SHA=$(git rev-parse "refs/tags/${TARGET_TAG}^{commit}")
 git checkout --detach "${TARGET_SHA}"
 
 PACKAGE_VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')).version")
-if [ "v${PACKAGE_VERSION}" != "${TARGET_TAG}" ]; then
-  echo "Tag ${TARGET_TAG} does not match package.json version v${PACKAGE_VERSION}" >&2
+BARE_TAG_VERSION="${TARGET_TAG#cli-v}"
+BARE_TAG_VERSION="${BARE_TAG_VERSION#v}"
+if [ "${PACKAGE_VERSION}" != "${BARE_TAG_VERSION}" ]; then
+  echo "Tag ${TARGET_TAG} does not match package.json version ${PACKAGE_VERSION}" >&2
   exit 1
 fi
 
