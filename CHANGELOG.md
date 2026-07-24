@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.7.0](https://github.com/kontourai/cli/compare/v0.6.0...v0.7.0) (2026-07-24)
+
+
+### Features
+
+* add Kontour suite CLI router ([#167](https://github.com/kontourai/cli/issues/167)) ([aa8909f](https://github.com/kontourai/cli/commit/aa8909f6b4459884ded716038d7a0f4eda5c22ba))
+* **cli:** compose repository onboarding ([#170](https://github.com/kontourai/cli/issues/170)) ([99e7228](https://github.com/kontourai/cli/commit/99e722885cd60344ed3d385ba57b3b1ea70c82b0))
+* **cli:** discover installed products and make help inert ([#203](https://github.com/kontourai/cli/issues/203)) ([aaa6b66](https://github.com/kontourai/cli/commit/aaa6b664851a1b5ad967d97d3f5b97b98544d1f2))
+* **cli:** opt-in standalone action runner (consent-gated, never-authority) ([#240](https://github.com/kontourai/cli/issues/240)) ([33f1381](https://github.com/kontourai/cli/commit/33f13815a6cbcf40ea516dfdac7b422f410c98fd))
+* **console-ui:** host-mountable BoardView component package ([#237](https://github.com/kontourai/cli/issues/237)) ([24516ab](https://github.com/kontourai/cli/commit/24516aba0683aa24aeba8b40747468449ddd1167))
+
+
+### Bug Fixes
+
+* **cli:** derive init version from package ([#172](https://github.com/kontourai/cli/issues/172)) ([57c82b6](https://github.com/kontourai/cli/commit/57c82b612687be0d1019027a8078ca84b0f98c9e))
+* **publish:** ship the library entry for @kontourai/console (closes C1/C2) ([#235](https://github.com/kontourai/cli/issues/235)) ([869b6fe](https://github.com/kontourai/cli/commit/869b6fe3e140403f9a5f77fedccc7844071aaf2d))
+* **release:** publish CLI core contract ([#189](https://github.com/kontourai/cli/issues/189)) ([382004e](https://github.com/kontourai/cli/commit/382004e9382dbf0716be7bc95cd0a2521a80cc30))
+* **release:** reconcile tag prefix — include-component-in-tag=false + legacy cli-v compat in the publish gate ([d56993e](https://github.com/kontourai/cli/commit/d56993e4c993266315b6e0bca33d6d3107164f43))
+
 ## [0.6.0](https://github.com/kontourai/cli/compare/cli-v0.5.0...cli-v0.6.0) (2026-07-24)
 
 
