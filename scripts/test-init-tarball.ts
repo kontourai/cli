@@ -1,17 +1,28 @@
 import assert from "node:assert/strict";
-import { existsSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
-const repo = resolve(import.meta.dirname, "../..");
+// Standalone repo (extracted from kontourai/console, console#<extract-cli>):
+// this file used to live at cli/scripts/test-init-tarball.ts inside a
+// monorepo, two levels below the repo root, and packed the CLI and
+// @kontourai/console-core sibling *workspaces* directly from source. Now the
+// CLI package IS the repo root, and console-core is a real, exact-pinned npm
+// dependency resolved into node_modules by `npm ci` — not local source — so
+// it is staged (with its manifest `scripts` field stripped, matching
+// scripts/test-tarball.ts's stageForPack rationale: an installed copy has no
+// dev-only build inputs, so any `prepare`/`build` script would only fail) and
+// packed from there instead.
+const repo = resolve(import.meta.dirname, "..");
 const root = mkdtempSync(join(tmpdir(), "kontour-init-real-e2e-"));
 const project = join(root, "repo");
 const emptyHelpProject = join(root, "empty-help");
 const home = join(root, "home");
 const packages = join(root, "packages");
 const install = join(root, "install");
-for (const dir of [project, emptyHelpProject, home, packages, install]) mkdirSync(dir);
+const staging = join(root, "staging");
+for (const dir of [project, emptyHelpProject, home, packages, install, staging]) mkdirSync(dir);
 writeFileSync(join(project, ".gitignore"), "# scratch sentinel\n");
 
 const env = { ...process.env, HOME: home, CODEX_HOME: join(home, ".codex"), npm_config_cache: join(root, "npm-cache"), NODE_PATH: "", NO_COLOR: "1", FORCE_COLOR: "0" };
@@ -20,10 +31,20 @@ function command(executable: string, args: string[], cwd: string) {
   assert.equal(result.status, 0, `${executable} ${args.join(" ")}\n${result.stdout}\n${result.stderr}`);
   return result.stdout;
 }
+function stageInstalledCoreForPack(): string {
+  const source = join(repo, "node_modules/@kontourai/console-core");
+  const staged = join(staging, "console-core");
+  cpSync(source, staged, { recursive: true });
+  const manifestPath = join(staged, "package.json");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
+  delete manifest.scripts;
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+  return staged;
+}
 command("git", ["init", "--quiet"], project);
 command("npm", ["pack", "--silent", "--pack-destination", packages, "@kontourai/flow-agents@3.8.0", "@kontourai/flow@3.1.4"], root);
-const cliTarball = command("npm", ["pack", "--silent", "--pack-destination", packages, join(repo, "cli")], root).trim().split("\n").at(-1)!;
-const coreTarball = command("npm", ["pack", "--silent", "--pack-destination", packages, join(repo, "console-core")], root).trim().split("\n").at(-1)!;
+const cliTarball = command("npm", ["pack", "--silent", "--pack-destination", packages, repo], root).trim().split("\n").at(-1)!;
+const coreTarball = command("npm", ["pack", "--silent", "--pack-destination", packages, stageInstalledCoreForPack()], root).trim().split("\n").at(-1)!;
 command("npm", ["init", "-y"], install);
 command("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", ...["kontourai-flow-agents-3.8.0.tgz", "kontourai-flow-3.1.4.tgz", cliTarball, coreTarball].map((name) => join(packages, name))], install);
 const agents = join(install, "node_modules/@kontourai/flow-agents");

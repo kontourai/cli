@@ -9,7 +9,11 @@ export interface ImportBoundaryFinding {
 }
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const repositoryRoot = resolve(packageRoot, "..");
+// Standalone repo: this package IS the repository root (extracted from
+// kontourai/console, where it used to be nested one level under a
+// monorepo root). Kept as a separate name because displayFile below reads
+// more clearly relative to a "repository" root than a "package" root.
+const repositoryRoot = packageRoot;
 const permittedConsoleCore = new Set([
   "@kontourai/console-core/product-capability-descriptor",
   "@kontourai/console-core/product-capability-descriptor/node",

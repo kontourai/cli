@@ -5,8 +5,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kontourai/console.git",
-    "directory": "cli"
+    "url": "git+https://github.com/kontourai/cli.git"
   },
   "type": "commonjs",
   "engines": {
@@ -36,6 +35,8 @@
   ],
   "scripts": {
     "test": "node --import tsx --test test/*.test.ts",
+    "test:release-policy": "node --import tsx --test scripts/npm-release-policy.test.ts scripts/verify-cli-core-release.test.ts scripts/check-release-package-versions.test.ts",
+    "check:release-package-versions": "node --import tsx scripts/check-release-package-versions.ts",
     "check:import-boundary": "npm run build && node --import tsx scripts/check-import-boundary.ts && node --import tsx scripts/check-import-boundary.ts --compiled && node --import tsx scripts/check-import-boundary.ts --negative",
     "test:tarball": "node --import tsx scripts/test-tarball.ts",
     "test:registry-regression": "node --import tsx scripts/test-public-registry-regression.ts",

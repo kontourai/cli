@@ -1,0 +1,191 @@
+name: Publish NPM
+
+on:
+  workflow_call:
+    inputs:
+      target_tag:
+        description: Immutable release tag whose package contents will be published
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+# Serialize retries for the same immutable release without cancelling a required publish.
+concurrency:
+  group: publish-npm-${{ inputs.target_tag }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      target_sha: ${{ steps.target.outputs.target_sha }}
+    steps:
+      - name: Verify Current Main Workflow Definition
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "Publish must be invoked from the current main workflow definition; got ${GITHUB_REF}" >&2
+            exit 1
+          fi
+
+      - name: Checkout Current Main For Safe Resolution
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: false
+          persist-credentials: false
+          path: cli
+
+      # Resolve only the exact tag namespace. A branch or other ref with the
+      # same short name is never package authority.
+      - name: Resolve And Validate Immutable Target
+        id: target
+        env:
+          TARGET_TAG: ${{ inputs.target_tag }}
+        run: bash scripts/resolve-release-target.sh "${TARGET_TAG}"
+        working-directory: cli
+
+  verify:
+    needs: gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22', '24']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.gate.outputs.target_sha }}
+          fetch-depth: 0
+          path: cli
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: cli/package-lock.json
+
+      - name: Install
+        run: npm ci --no-fund --no-audit
+        working-directory: cli
+
+      - name: Test
+        run: npm test
+        working-directory: cli
+
+      - name: Pack Dry Run
+        run: npm pack --dry-run
+        working-directory: cli
+
+  publish:
+    needs: [gate, verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.gate.outputs.target_sha }}
+          fetch-depth: 0
+          path: cli
+
+      # (Route A, carried over from kontourai/console#264 where this package
+      # used to live): the tag checkout above is the immutable
+      # PACKAGE-CONTENT authority (its manifest defines exactly what gets
+      # published) but its scripts/ directory is frozen forever the moment the
+      # tag is cut, so a release-policy bug fixed on main (e.g. npm CLI output
+      # shape drift) can never reach an already-tagged release. main is the
+      # WORKFLOW authority: it defines which checks run and how. Check out
+      # main's scripts into a separate path and run policy gates FROM there,
+      # while every step still points its working directory (and therefore its
+      # manifest/package reads) at the tag checkout in `cli`. Never let a
+      # policy script under `cli-main` read package contents from
+      # `cli-main` itself.
+      - name: Checkout Main Release-Policy Scripts
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+          path: cli-main
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      # OIDC trusted publishing. Do NOT set setup-node's `registry-url` here —
+      # it writes an .npmrc `_authToken` line that pins `npm publish` to a
+      # token-auth path instead of the package's configured OIDC trusted
+      # publisher. With no token config present and `id-token: write`, npm
+      # >= 11.5.1 authenticates the publish via the trusted publisher.
+      # Upgrade npm so that support is guaranteed regardless of the
+      # Node-bundled version.
+      - name: Ensure npm supports OIDC trusted publishing
+        run: npm install -g npm@latest
+
+      - name: Install
+        run: npm ci --no-fund --no-audit
+        working-directory: cli
+
+      - name: Check Published Version
+        id: published
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          VIEW_OUTPUT=$(mktemp)
+          if npm view "${PACKAGE_NAME}" versions --json >"${VIEW_OUTPUT}" 2>&1; then
+            if node -e 'const fs=require("node:fs"); const versions=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.exit((Array.isArray(versions)?versions:[versions]).includes(process.argv[2])?0:1)' "${VIEW_OUTPUT}" "${PACKAGE_VERSION}"; then
+              echo "published=true" >> "${GITHUB_OUTPUT}"
+              echo "${PACKAGE_NAME}@${PACKAGE_VERSION} is already published; skipping npm publish."
+            else
+              echo "published=false" >> "${GITHUB_OUTPUT}"
+            fi
+          elif grep -Fq "E404" "${VIEW_OUTPUT}" && grep -Fq "${PACKAGE_NAME}" "${VIEW_OUTPUT}" && grep -Eq "(is not in this registry|Not found)" "${VIEW_OUTPUT}"; then
+            # The only tolerated lookup failure is an exact public-package absence.
+            # Authentication, registry, network, policy, and malformed-response failures stay fatal.
+            echo "published=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "npm registry lookup failed for ${PACKAGE_NAME}; refusing to classify it as unpublished." >&2
+            cat "${VIEW_OUTPUT}" >&2
+            exit 1
+          fi
+        working-directory: cli
+
+      - name: Verify Core Dependency Is Public
+        # Policy code from current main (cli-main); manifest/package data
+        # from the immutable tag (working-directory stays `cli`, and the
+        # script resolves its root from process.cwd(), never its own file
+        # location) — see "Checkout Main Release-Policy Scripts" above.
+        run: node --import tsx ../cli-main/scripts/verify-cli-core-release.ts
+        working-directory: cli
+
+      - name: Publish
+        if: steps.published.outputs.published != 'true'
+        run: |
+          npm publish --access public --provenance
+
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          for ATTEMPT in 1 2 3 4 5; do
+            if [ "$(npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version)" = "${PACKAGE_VERSION}" ]; then
+              echo "Confirmed ${PACKAGE_NAME}@${PACKAGE_VERSION} on npm."
+              exit 0
+            fi
+            if [ "${ATTEMPT}" -lt 5 ]; then sleep 5; fi
+          done
+          echo "Publish returned success but ${PACKAGE_NAME}@${PACKAGE_VERSION} could not be confirmed on npm." >&2
+          exit 1
+        working-directory: cli
