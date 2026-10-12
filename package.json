@@ -43,7 +43,9 @@
     "test:init-e2e": "npm run build && node --import tsx scripts/test-init-tarball.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.build.json",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "docs:check": "npx -y github:kontourai/docs-kit#27cd43ded8c6e2e591d85d1d65bff31b3ae92e24 docs-kit check",
+    "docs:build": "npx -y github:kontourai/docs-kit#27cd43ded8c6e2e591d85d1d65bff31b3ae92e24 docs-kit build"
   },
   "dependencies": {
     "@kontourai/console-core": "0.3.0"

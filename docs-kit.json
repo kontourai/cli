@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "product": "cli",
+  "title": "Kontour CLI",
+  "tagline": "Offline-first suite router for Kontour products",
+  "repo": "kontourai/cli",
+  "landing": "README.md",
+  "documents": [
+    { "source": "docs/getting-started.md", "section": "Start Here" },
+    { "source": "docs/concepts.md", "section": "Concepts" },
+    { "source": "docs/kontour-cli-router.md", "section": "Concepts" },
+    { "source": "docs/reference.md", "section": "Reference" },
+    { "source": "docs/kontour-init.md", "section": "Reference" }
+  ],
+  "topics": [
+    { "id": "install", "title": "Install the router and products", "source": "docs/getting-started.md#installing-products" },
+    { "id": "namespaces", "title": "Products and namespaces", "source": "docs/concepts.md#products-and-namespaces" },
+    { "id": "descriptors", "title": "Product descriptors", "source": "docs/concepts.md#descriptors" },
+    { "id": "discovery", "title": "Product discovery", "source": "docs/concepts.md#discovery" },
+    { "id": "delegation", "title": "How commands are delegated", "source": "docs/concepts.md#delegation" },
+    { "id": "builtin-commands", "title": "Built-in commands", "source": "docs/reference.md#built-in-commands" },
+    { "id": "init-options", "title": "kontour init options", "source": "docs/reference.md#init" },
+    { "id": "init-consent", "title": "Init consent and mutation", "source": "docs/kontour-init.md#consent-and-mutation" },
+    { "id": "exit-codes", "title": "Exit codes", "source": "docs/reference.md#exit-codes" },
+    { "id": "diagnostic-codes", "title": "Diagnostic codes", "source": "docs/reference.md#diagnostic-codes" },
+    { "id": "compat-catalog", "title": "Compatibility catalog", "source": "docs/kontour-cli-router.md#compatibility-catalog" },
+    { "id": "package-exports", "title": "Package exports", "source": "docs/reference.md#package-exports" }
+  ]
+}
