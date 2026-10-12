@@ -1,7 +1,11 @@
 # Kontour CLI
 
+[![npm version](https://img.shields.io/npm/v/%40kontourai%2Fcli)](https://www.npmjs.com/package/@kontourai/cli)
 [![CI](https://github.com/kontourai/cli/actions/workflows/ci.yml/badge.svg)](https://github.com/kontourai/cli/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-kontourai.github.io-blue)](https://kontourai.github.io/cli/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
+[Documentation](https://kontourai.github.io/cli/)
 
 **Offline-first suite router for Kontour products.**
 
