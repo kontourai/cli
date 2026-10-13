@@ -1,5 +1,13 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "purpose": "Find and safely invoke installed Kontour product commands through one offline-first entry point.",
+  "builtOn": [
+    {
+      "product": "console",
+      "via": "@kontourai/console-core",
+      "for": "Validate capability descriptors and resolve installed product command intent bindings."
+    }
+  ],
   "product": "cli",
   "title": "Kontour CLI",
   "tagline": "Offline-first suite router for Kontour products",

@@ -44,8 +44,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.build.json",
     "prepack": "npm run build",
-    "docs:check": "npx -y github:kontourai/docs-kit#27cd43ded8c6e2e591d85d1d65bff31b3ae92e24 docs-kit check",
-    "docs:build": "npx -y github:kontourai/docs-kit#27cd43ded8c6e2e591d85d1d65bff31b3ae92e24 docs-kit build"
+    "docs:check": "npx -y github:kontourai/corpus#340b66fc8f723c1babe35fce8240c82cd196b0db corpus check",
+    "docs:build": "npx -y github:kontourai/corpus#340b66fc8f723c1babe35fce8240c82cd196b0db corpus build"
   },
   "dependencies": {
     "@kontourai/console-core": "0.3.0"
