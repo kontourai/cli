@@ -60,3 +60,5 @@ npm run build
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+See [documentation maintenance](docs/contributing.md) when changing source or public contracts.
